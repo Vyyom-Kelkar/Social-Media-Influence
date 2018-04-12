@@ -1,0 +1,1 @@
+clear accuracy avg_accuracy1 avg_accuracy2 avg_accuracy3 colNames i a
