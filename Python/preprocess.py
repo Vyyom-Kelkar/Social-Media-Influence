@@ -33,4 +33,4 @@ def load_data(file_name='./train.csv', reshape=False, cache=True, process=True):
     dataframe = skl.utils.shuffle(dataframe)
     print(dataframe)
 
-load_data("train.csv")
+load_data("../train.csv")
