@@ -26,6 +26,10 @@ from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor
 from sklearn.neighbors.nearest_centroid import NearestCentroid
 from scipy import interp
 
+from sklearn.linear_model import ElasticNet
+from sklearn.model_selection import GridSearchCV
+from sklearn.metrics import mean_absolute_error, mean_squared_error
+
 ###########################
 # LOADING TRAINING DATA
 ###########################
@@ -81,19 +85,20 @@ X_train_B = np.array(X_train_B)
 #X_train = np.log(1+X_train_A) - np.log(1+X_train_B)
 X_train = np.concatenate((np.log(1+X_train_A),np.log(1+X_train_B)),1)
 
-# random_state = np.random.RandomState(0)
-# classifier = OneVsRestClassifier(svm.SVC(kernel='linear', probability=True,random_state=random_state))
-# classifier2 = OneVsRestClassifier(svm.SVC(kernel='rbf', probability=True,random_state=random_state))
+random_state = np.random.RandomState(0)
+classifier = OneVsRestClassifier(svm.SVC(kernel='linear', probability=True,random_state=random_state))
+classifier2 = OneVsRestClassifier(svm.SVC(kernel='rbf', probability=True,random_state=random_state))
+elasticNet = ElasticNet()
+gradientBoost = GradientBoostingRegressor()
 
-# clf = NearestCentroid()
-# clf.fit(X_train, y_train)
-# NearestCentroid(metric='euclidean', shrink_threshold=None)
-# y_score = clf.predict(X_train)
-# y_score2 = classifier.fit(X_train, y_train).decision_function(X_train)
-# y_score3 = classifier2.fit(X_train, y_train).decision_function(X_train)
-y_score4 = GradientBoostingRegressor(loss='ls',n_estimators=100, learning_rate=1, max_depth=1).fit(X_train, y_train).predict(X_train)
-y_score5 = RandomForestRegressor(n_estimators=35,max_features=7).fit(X_train, y_train).predict(X_train)
-# y_score6 = (y_score4+y_score5)/2
+# y_score = classifier.fit(X_train, y_train).decision_function(X_train)
+# y_score2 = classifier2.fit(X_train, y_train).decision_function(X_train)
+# y_score3 = GradientBoostingRegressor(loss='ls',n_estimators=100, learning_rate=1, max_depth=1).fit(X_train, y_train).predict(X_train)
+# y_score4 = RandomForestRegressor(n_estimators=35,max_features=7).fit(X_train, y_train).predict(X_train)
+
+#y_score4 = GridSearchCV(gradientBoost,{'n_estimators': [50, 100, 150, 200, 250, 300],'learning_rate': [0.5, 0.6, 0.7, 0.8, 0.9], 'max_depth': [1, 2, 3]}, n_jobs=16).fit(X_train, y_train).predict(X_train)
+#y_score5 = GridSearchCV(elasticNet,{'l1_ratio': [0, .25, .5, .75, 1],'alpha': [.01, .5, 1, 1.5, 2]}, n_jobs=16).fit(X_train, y_train).predict(X_train)
+
 
 fpr = dict()
 tpr = dict()
@@ -112,10 +117,10 @@ tpr5 = dict()
 # print(roc_auc_score(y_train,y_score2, average='macro',sample_weight=None))
 # print("One v Rest Linear")
 # print(roc_auc_score(y_train,y_score3, average='macro',sample_weight=None))
-print("Gradient Boosting Regression")
-print(roc_auc_score(y_train,y_score4, average='macro',sample_weight=None))
-print("Random Forest Classifier")
-print(roc_auc_score(y_train,y_score5, average='macro',sample_weight=None))
+#print("Gradient Boosting Regression")
+#print(roc_auc_score(y_train,y_score4, average='macro',sample_weight=None))
+#print("Elastic Classifier")
+#print(roc_auc_score(y_train,y_score5, average='macro',sample_weight=None))
 # print("Average")
 # print(roc_auc_score(y_train,y_score6, average='macro',sample_weight=None))
 
@@ -171,8 +176,12 @@ X_test_B = np.array(X_test_B)
 # transform features in the same way as for training to ensure consistency
 X_test = np.concatenate((np.log(1+X_test_A),np.log(1+X_test_B)),1)
 
-y_scoreG = GradientBoostingRegressor(loss='ls',n_estimators=100, learning_rate=1, max_depth=1).fit(X_train, y_train).predict(X_test)
-y_scoreR = RandomForestRegressor(n_estimators=35,max_features=7).fit(X_train, y_train).predict(X_test)
+
+y_scoreG = GridSearchCV(gradientBoost,{'n_estimators': [100], 'learning_rate': [0.5], 'max_depth': [2]}, n_jobs=16, cv=5).fit(X_train, y_train).predict(X_test)
+y_scoreR = GridSearchCV(elasticNet,{'alpha': [0.01], 'l1_ratio': [0]}, n_jobs=16, cv=5).fit(X_train, y_train).predict(X_test)
+
+#y_scoreG = GradientBoostingRegressor(loss='ls',n_estimators=100, learning_rate=1, max_depth=1).fit(X_train, y_train).predict(X_test)
+#y_scoreR = RandomForestRegressor(n_estimators=35,max_features=7).fit(X_train, y_train).predict(X_test)
 # y_score = (y_scoreG+y_scoreR)/2
 # y_score = y_scoreG
 
