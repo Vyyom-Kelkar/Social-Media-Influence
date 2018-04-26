@@ -22,9 +22,8 @@ from sklearn.preprocessing import label_binarize
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.metrics import mean_squared_error
 from sklearn.datasets import make_friedman1
-from sklearn.ensemble import GradientBoostingRegressor
+from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor
 from sklearn.neighbors.nearest_centroid import NearestCentroid
-from sklearn.ensemble import RandomForestClassifier
 from scipy import interp
 
 ###########################
@@ -80,21 +79,21 @@ X_train_B = np.array(X_train_B)
 ###########################
 
 #X_train = np.log(1+X_train_A) - np.log(1+X_train_B)
-X_train = np.log(1+X_train_A) - np.log(1+X_train_B)
+X_train = np.concatenate((np.log(1+X_train_A),np.log(1+X_train_B)),1)
 
-random_state = np.random.RandomState(0)
-classifier = OneVsRestClassifier(svm.SVC(kernel='linear', probability=True,random_state=random_state))
-classifier2 = OneVsRestClassifier(svm.SVC(kernel='rbf', probability=True,random_state=random_state))
+# random_state = np.random.RandomState(0)
+# classifier = OneVsRestClassifier(svm.SVC(kernel='linear', probability=True,random_state=random_state))
+# classifier2 = OneVsRestClassifier(svm.SVC(kernel='rbf', probability=True,random_state=random_state))
 
-clf = NearestCentroid()
-clf.fit(X_train, y_train)
-NearestCentroid(metric='euclidean', shrink_threshold=None)
-y_score = clf.predict(X_train)
-y_score2 = classifier.fit(X_train, y_train).decision_function(X_train)
-y_score3 = classifier2.fit(X_train, y_train).decision_function(X_train)
-y_score4 = GradientBoostingRegressor(n_estimators=200, learning_rate=1.9, max_depth=1, random_state=0).fit(X_train, y_train).predict(X_train)
-y_score5 = RandomForestClassifier(n_estimators=100).fit(X_train, y_train).predict(X_train)
-y_score6 = (y_score4+y_score5)/2
+# clf = NearestCentroid()
+# clf.fit(X_train, y_train)
+# NearestCentroid(metric='euclidean', shrink_threshold=None)
+# y_score = clf.predict(X_train)
+# y_score2 = classifier.fit(X_train, y_train).decision_function(X_train)
+# y_score3 = classifier2.fit(X_train, y_train).decision_function(X_train)
+y_score4 = GradientBoostingRegressor(loss='ls',n_estimators=100, learning_rate=1, max_depth=1).fit(X_train, y_train).predict(X_train)
+y_score5 = RandomForestRegressor(n_estimators=35,max_features=7).fit(X_train, y_train).predict(X_train)
+# y_score6 = (y_score4+y_score5)/2
 
 fpr = dict()
 tpr = dict()
@@ -106,19 +105,19 @@ fpr4 = dict()
 tpr4 = dict()
 fpr5 = dict()
 tpr5 = dict()
-print("Accuracy on Training Data")
-print("KNN")
-print(roc_auc_score(y_train,y_score, average='macro',sample_weight=None))
-print("One v Rest RBF")
-print(roc_auc_score(y_train,y_score2, average='macro',sample_weight=None))
-print("One v Rest Linear")
-print(roc_auc_score(y_train,y_score3, average='macro',sample_weight=None))
+# print("Accuracy on Training Data")
+# print("KNN")
+# print(roc_auc_score(y_train,y_score, average='macro',sample_weight=None))
+# print("One v Rest RBF")
+# print(roc_auc_score(y_train,y_score2, average='macro',sample_weight=None))
+# print("One v Rest Linear")
+# print(roc_auc_score(y_train,y_score3, average='macro',sample_weight=None))
 print("Gradient Boosting Regression")
 print(roc_auc_score(y_train,y_score4, average='macro',sample_weight=None))
 print("Random Forest Classifier")
 print(roc_auc_score(y_train,y_score5, average='macro',sample_weight=None))
-print("Average")
-print(roc_auc_score(y_train,y_score6, average='macro',sample_weight=None))
+# print("Average")
+# print(roc_auc_score(y_train,y_score6, average='macro',sample_weight=None))
 
 # plt.figure()
 # lw = 2
@@ -128,7 +127,7 @@ print(roc_auc_score(y_train,y_score6, average='macro',sample_weight=None))
 #     fpr3[i], tpr3[i], _ = roc_curve(y_train, y_score3)
 #     fpr4[i], tpr4[i], _ = roc_curve(y_train, y_score4)
 #     fpr5[i], tpr5[i], _ = roc_curve(y_train, y_score5)
-#
+
 # plt.plot(fpr[2], tpr[2], color='purple',
 #          lw=lw, label='KNN (area = %0.5f)' % roc_auc_score(y_train,y_score, average='macro',sample_weight=None))
 # plt.plot(fpr2[2], tpr2[2], color='red',
@@ -139,7 +138,7 @@ print(roc_auc_score(y_train,y_score6, average='macro',sample_weight=None))
 #          lw=lw, label='Gradient Boosting Regression (area = %0.5f)' % roc_auc_score(y_train,y_score4, average='macro',sample_weight=None))
 # plt.plot(fpr5[2], tpr5[2], color='yellow',
 #          lw=lw, label='Random Forest Classifier (area = %0.5f)' % roc_auc_score(y_train,y_score5, average='macro',sample_weight=None))
-#
+
 # plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
 # plt.xlim([0.0, 1.0])
 # plt.ylim([0.0, 1.05])
@@ -170,25 +169,38 @@ X_test_A = np.array(X_test_A)
 X_test_B = np.array(X_test_B)
 
 # transform features in the same way as for training to ensure consistency
-X_test = np.log(1+X_test_A) - np.log(1+X_test_B)
+X_test = np.concatenate((np.log(1+X_test_A),np.log(1+X_test_B)),1)
 
-y_scoreG = GradientBoostingRegressor(n_estimators=200, learning_rate=1.9, max_depth=1, random_state=0).fit(X_train, y_train).predict(X_test)
-y_scoreR = RandomForestClassifier(n_estimators=100).fit(X_train, y_train).predict(X_test)
-y_score = (y_scoreG+y_scoreR)/2
-
+y_scoreG = GradientBoostingRegressor(loss='ls',n_estimators=100, learning_rate=1, max_depth=1).fit(X_train, y_train).predict(X_test)
+y_scoreR = RandomForestRegressor(n_estimators=35,max_features=7).fit(X_train, y_train).predict(X_test)
+# y_score = (y_scoreG+y_scoreR)/2
+# y_score = y_scoreG
 
 ###########################
 # WRITING SUBMISSION FILE
 ###########################
 
-predfile = open('predictions.csv','w+')
+predfile = open('GradientBoostingRegressor.csv','w')
+predfile2 = open('RandomForestRegressor.csv','w')
+print >> predfile, 'Id,Choice'
 #print >>predfile, y_score
-for i in range(len(y_score)):
-    if y_score[i]>1:
-        print >>predfile, 1
-    elif y_score[i]<0:
-        print >>predfile, 0
+for i in range(len(y_scoreG)):
+    if y_scoreG[i]>1:
+        print >>predfile, '%d,%d' % (i+1, 1)
+    elif y_scoreG[i]<0:
+        print >>predfile, '%d,%d' % (i+1, 0)
     else:
-        print >>predfile, y_score[i]
+        print >>predfile, '%d,%f' % (i+1, y_scoreG[i])
 
 predfile.close()
+
+print >> predfile2, 'Id,Choice'
+for i in range(len(y_scoreR)):
+    if y_scoreR[i]>1:
+        print >>predfile2, '%d,%d' % (i+1, 1)
+    elif y_scoreR[i]<0:
+        print >>predfile2, '%d,%d' % (i+1, 0)
+    else:
+        print >>predfile2, '%d,%f' % (i+1, y_scoreR[i])
+
+predfile2.close()
