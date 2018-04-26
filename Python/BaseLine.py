@@ -71,7 +71,7 @@ y_train = np.array(y_train)
 X_train_A = np.array(X_train_A)
 X_train_B = np.array(X_train_B)
 
-# Use logarithmic cmoothing to transorm the features and combine into one list
+# Use logarithmic smoothing to transorm the features and combine into one list
 X_train = np.concatenate((np.log(1+X_train_A),np.log(1+X_train_B)),1)
 
 # Create the five classification models
